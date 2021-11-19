@@ -144,6 +144,7 @@ LOOP:
 	res := float64(nb) * 1000000000.0 / ns
 	log.Printf("THROUGHPUT %.6f", res)
 	if !*flagDebug {
+		fmt.Println(displayCPUVendorName())
 		fmt.Printf("%.6f\n", res)
 	}
 	if *flagRes != "" {
@@ -229,13 +230,21 @@ func spawnBench(workers int, resfile string) error {
 	return nil
 }
 
+func getCPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
+	cpuInfo, err := cpu.InfoWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return cpuInfo, nil
+}
+
 // displayCPU displays some CPU information
 func displayCPU() error {
 
 	ctx := context.Background()
 
 	// Get type of CPU, frequency
-	cpuinfo, err := cpu.InfoWithContext(ctx)
+	cpuinfo, err := getCPUInfo(ctx)
 	if err != nil {
 		return err
 	}
@@ -313,4 +322,9 @@ func measureFreq() error {
 func displayVersion() error {
 	fmt.Println("Version:", Version)
 	return nil
+}
+
+func displayCPUVendorName() string {
+	cpuinfo, _ := getCPUInfo(context.Background())
+	return cpuinfo[0].ModelName
 }
