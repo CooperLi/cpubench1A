@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -30,6 +31,7 @@ var (
 	flagNb       = flag.Int("nb", 10, "Number of iterations")
 	flagRes      = flag.String("res", "", "Optional result append file")
 	flagVersion  = flag.Bool("version", false, "Display program version and exit")
+	flagDebug    = flag.Bool("debug", false, "Show Debug info")
 )
 
 // main entry point of the progam
@@ -37,6 +39,9 @@ func main() {
 
 	flag.Parse()
 
+	if !*flagDebug {
+		log.SetOutput(ioutil.Discard)
+	}
 	// Fix number of of threads of the Go runtime.
 	// By default, 4 workers per thread.
 	if *flagThreads == -1 {
@@ -138,6 +143,9 @@ LOOP:
 	ns := float64(end.Sub(begin).Nanoseconds())
 	res := float64(nb) * 1000000000.0 / ns
 	log.Printf("THROUGHPUT %.6f", res)
+	if !*flagDebug {
+		fmt.Printf("%.6f\n", res)
+	}
 	if *flagRes != "" {
 		if err := AppendResult(*flagRes, *flagWorkers, res); err != nil {
 			log.Print(err)
@@ -160,7 +168,7 @@ func stdBench() error {
 	}
 
 	// Create a temporary file storing the results
-	tmp, err := os.CreateTemp("", "cpubench1a-*")
+	tmp, err := ioutil.TempFile("", "cpubench1a-*")
 	if err != nil {
 		return err
 	}
@@ -194,7 +202,6 @@ func stdBench() error {
 
 // spawnBench runs a benchmark as an external process
 func spawnBench(workers int, resfile string) error {
-
 	// Get executable path
 	executable, err := os.Executable()
 	if err != nil {
